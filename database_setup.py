@@ -46,6 +46,5 @@ class MenuItem(Base):
 
 
 engine = create_engine('sqlite:///restaurantmenu.db')
- 
 
 Base.metadata.create_all(engine)
