@@ -2,3 +2,4 @@ __pycache__
 .vagrant
 env
 client_secrets.json
+*.db

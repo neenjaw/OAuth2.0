@@ -1,17 +1,23 @@
 import string
 import random
 import requests
+
 from flask import make_response
+from flask import session as login_session
+from flask import Flask, render_template, request, redirect, jsonify, url_for, flash
+
 import json
 import httplib2
+
 from oauth2client.client import Credentials as OauthCredentials
 from oauth2client.client import FlowExchangeError
 from oauth2client.client import flow_from_clientsecrets
-from flask import session as login_session
-from database_setup import Base, Restaurant, MenuItem
+
+from database_setup import Base, User, Restaurant, MenuItem
+
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import create_engine, asc
-from flask import Flask, render_template, request, redirect, jsonify, url_for, flash
+
 app = Flask(__name__)
 
 
@@ -19,7 +25,7 @@ CLIENT_ID = json \
     .loads(open('client_secrets.json', 'r').read())['web']['client_id']
 
 # Connect to Database and create database session
-engine = create_engine('sqlite:///restaurantmenu.db')
+engine = create_engine('sqlite:///restaurantmenuwithusers.db')
 Base.metadata.bind = engine
 
 DBSession = sessionmaker(bind=engine)
@@ -39,7 +45,7 @@ def showLogin():
     # return (f"The current session state is {state}")
 
     return render_template('login.html', STATE=state)
-    
+
 
 # CONNECT - Get the issued token using the secret code from the POST
 #           Set the login_session to current user
@@ -125,6 +131,11 @@ def gconnect():
     login_session['picture'] = data['picture']
     login_session['email'] = data['email']
 
+    login_session['user_id'] = getUserId(login_session['email'])
+
+    if login_session['user_id'] is None:
+        login_session['user_id'] = createUser(login_session)
+
     output = """
         <h1>Welcome, {}!</h1>
         <img src="{}" style="width: 300px; height: 300px; border-radius: 150px; -webkit-border-radius: 150px; -moz-border-radius: 150px;">
@@ -207,7 +218,7 @@ def newRestaurant():
         return redirect('/login')
 
     if request.method == 'POST':
-        newRestaurant = Restaurant(name=request.form['name'])
+        newRestaurant = Restaurant(name=request.form['name'], user_id=login_session['user_id'])
         session.add(newRestaurant)
         flash('New Restaurant %s Successfully Created' % newRestaurant.name)
         session.commit()
@@ -269,7 +280,7 @@ def newMenuItem(restaurant_id):
     restaurant = session.query(Restaurant).filter_by(id=restaurant_id).one()
     if request.method == 'POST':
         newItem = MenuItem(name=request.form['name'], description=request.form['description'],
-                           price=request.form['price'], course=request.form['course'], restaurant_id=restaurant_id)
+                           price=request.form['price'], course=request.form['course'], restaurant_id=restaurant_id, user_id=login_session['user_id'])
         session.add(newItem)
         session.commit()
         flash('New Menu %s Item Successfully Created' % (newItem.name))
@@ -319,6 +330,36 @@ def deleteMenuItem(restaurant_id, menu_id):
         return redirect(url_for('showMenu', restaurant_id=restaurant_id))
     else:
         return render_template('deleteMenuItem.html', item=itemToDelete)
+
+def getUserId(email):
+    try:
+        user = session.query(User).filter_by(email = email).one()
+        return user.id
+    except:
+        return None
+
+def getUserInfo(user_id):
+    try:
+        user = session.query(User).filter_by(user_id = user_id).one()
+        return user
+    except:
+        return None
+
+def createUser(login_session):
+    try:
+        newUser = User(
+            name=login_session['username'],
+            email=login_session['email'],
+            picture=login_session['picture']
+        )
+
+        session.add(newUser)
+        session.commit()
+
+        user = session.query(User).filter_by(email = login_session['email']).one()
+        return user.id
+    except:
+        return None
 
 
 if __name__ == '__main__':
