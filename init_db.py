@@ -1,15 +1,16 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
  
-from database_setup import Base, User, Restaurant, MenuItem
+from models import Db, User, Restaurant, MenuItem
  
-engine = create_engine('sqlite:///restaurantmenuwithusers.db')
+engine = create_engine('sqlite:///restaurants.db')
 # Bind the engine to the metadata of the Base class so that the
 # declaratives can be accessed through a DBSession instance
-Base.metadata.bind = engine
+Db.metadata.create_all(engine)
+Db.metadata.bind = engine
  
 DBSession = sessionmaker(bind=engine)
-# A DBSession() instance establishes all conversations with the database
+# A DBSession() instance establishes all conversations with the dataDb
 # and represents a "staging zone" for all the objects loaded into the
 # database session object. Any change made against the objects in the
 # session won't be persisted into the database until you call

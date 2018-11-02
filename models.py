@@ -1,11 +1,10 @@
-from sqlalchemy import Column, ForeignKey, Integer, String
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy import Column, Integer, String, ForeignKey
 from sqlalchemy.orm import relationship
-from sqlalchemy import create_engine
- 
-Base = declarative_base()
+from flask_sqlalchemy import SQLAlchemy
 
-class User (Base):
+Db = SQLAlchemy()
+
+class User (Db.Model):
     __tablename__ = 'user'
 
     id      =   Column(Integer, primary_key=True)
@@ -23,7 +22,7 @@ class User (Base):
             'picture'   : self.picture,
         }
 
-class Restaurant(Base):
+class Restaurant(Db.Model):
     __tablename__ = 'restaurant'
    
     id      = Column(Integer, primary_key=True)
@@ -39,7 +38,7 @@ class Restaurant(Base):
            'id'           : self.id,
        }
  
-class MenuItem(Base):
+class MenuItem(Db.Model):
     __tablename__ = 'menu_item'
 
 
@@ -63,7 +62,3 @@ class MenuItem(Base):
            'price'        : self.price,
            'course'       : self.course,
        }
-
-engine = create_engine('sqlite:///restaurantmenuwithusers.db')
-
-Base.metadata.create_all(engine)
